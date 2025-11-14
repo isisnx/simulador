@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Lucro Real - Tributos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .results {
+            grid-column: 1 / -1;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .result-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            color: #212529;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .result-value.positive {
+            color: #28a745;
+        }
+
+        .result-value.negative {
+            color: #dc3545;
+        }
+
+        .percentage {
+            color: #6c757d;
+            font-size: 0.85em;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Simulador Lucro Real - Tributos</h1>
+            <p>Calcule impostos e margens de lucro em tempo real</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>Identificação da Operação</h2>
+                <div class="form-group">
+                    <label for="cnpjCliente">CNPJ do Cliente:</label>
+                    <input type="text" id="cnpjCliente" placeholder="Ex: 00.000.000/0000-00">
+                </div>
+                <div class="form-group">
+                    <label for="numeroNota">Número da Nota:</label>
+                    <input type="text" id="numeroNota" placeholder="Ex: 123456">
+                </div>
+                <div class="form-group">
+                    <label for="produto">Produto:</label>
+                    <input type="text" id="produto" placeholder="Ex: Notebook Gamer">
+                </div>
+
+                <h2>Parâmetros de Venda</h2>
+
+                <div class="form-group">
+                    <label for="tipoVenda">Tipo de Venda:</label>
+                    <select id="tipoVenda" onchange="calcular()">
+                        <option value="interna">Interna</option>
+                        <option value="interestadual">Interestadual</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="destinatario">Destinatário:</label>
+                    <select id="destinatario" onchange="calcular()">
+                        <option value="PJ Com IE Revenda">PJ Com IE Revenda</option>
+                        <option value="PJ Com IE Consumo">PJ Com IE Consumo</option>
+                        <option value="PJ Sem IE">PJ Sem IE</option>
+                        <option value="PF">PF (Pessoa Física)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="estadoOrigemGroup" style="display:none;">
+                    <label for="estadoOrigem">Estado de Origem:</label>
+                    <select id="estadoOrigem" onchange="calcular()">
+                        <option value="SP">São Paulo (SP)</option>
+                        <option value="RJ">Rio de Janeiro (RJ)</option>
+                        <option value="MG">Minas Gerais (MG)</option>
+                        <option value="ES">Espírito Santo (ES)</option>
+                        <option value="AC">Acre (AC)</option>
+                        <option value="AL">Alagoas (AL)</option>
+                        <option value="AP">Amapá (AP)</option>
+                        <option value="AM">Amazonas (AM)</option>
+                        <option value="BA">Bahia (BA)</option>
+                        <option value="CE">Ceará (CE)</option>
+                        <option value="DF">Distrito Federal (DF)</option>
+                        <option value="GO">Goiás (GO)</option>
+                        <option value="MA">Maranhão (MA)</option>
+                        <option value="MT">Mato Grosso (MT)</option>
+                        <option value="MS">Mato Grosso do Sul (MS)</option>
+                        <option value="PA">Pará (PA)</option>
+                        <option value="PB">Paraíba (PB)</option>
+                        <option value="PR">Paraná (PR)</option>
+                        <option value="PE">Pernambuco (PE)</option>
+                        <option value="PI">Piauí (PI)</option>
+                        <option value="RN">Rio Grande do Norte (RN)</option>
+                        <option value="RS">Rio Grande do Sul (RS)</option>
+                        <option value="RO">Rondônia (RO)</option>
+                        <option value="RR">Roraima (RR)</option>
+                        <option value="SC">Santa Catarina (SC)</option>
+                        <option value="SE">Sergipe (SE)
+                        <option value="TO">Tocantins (TO)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="estadoDestinoGroup" style="display:none;">
+                    <label for="estadoDestino">Estado de Destino:</label>
+                    <select id="estadoDestino" onchange="calcular()">
+                        <option value="SP">São Paulo (SP)</option>
+                        <option value="RJ">Rio de Janeiro (RJ)</option>
+                        <option value="MG">Minas Gerais (MG)</option>
+                        <option value="ES">Espírito Santo (ES)</option>
+                        <option value="AC">Acre (AC)</option>
+                        <option value="AL">Alagoas (AL)</option>
+                        <option value="AP">Amapá (AP)</option>
+                        <option value="AM">Amazonas (AM)</option>
+                        <option value="BA">Bahia (BA)</option>
+                        <option value="CE">Ceará (CE)</option>
+                        <option value="DF">Distrito Federal (DF)</option>
+                        <option value="GO">Goiás (GO)</option>
+                        <option value="MA">Maranhão (MA)</option>
+                        <option value="MT">Mato Grosso (MT)</option>
+                        <option value="MS">Mato Grosso do Sul (MS)</option>
+                        <option value="PA">Pará (PA)</option>
+                        <option value="PB">Paraíba (PB)</option>
+                        <option value="PR">Paraná (PR)</option>
+                        <option value="PE">Pernambuco (PE)</option>
+                        <option value="PI">Piauí (PI)</option>
+                        <option value="RN">Rio Grande do Norte (RN)</option>
+                        <option value="RS">Rio Grande do Sul (RS)</option>
+                        <option value="RO">Rondônia (RO)</option>
+                        <option value="RR">Roraima (RR)</option>
+                        <option value="SC">Santa Catarina (SC)</option>
+                        <option value="SE">Sergipe (SE)</option>
+                        <option value="TO">Tocantins (TO)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="valorVenda">Valor de Venda (R$):</label>
+                    <input type="number" id="valorVenda" value="1369.54" step="0.01" onchange="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <label for="aliquotaICMS">Alíquota ICMS (%):</label>
+                    <input type="number" id="aliquotaICMS" value="19" step="0.01" onchange="calcular()">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Parâmetros de Compra</h2>
+
+                <div class="form-group">
+                    <label for="origem">Origem da Mercadoria:</label>
+                    <select id="origem" onchange="calcular()">
+                        <option value="importada">Importada</option>
+                        <option value="nacional">Nacional</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="regiaoCompra">Comprou de Qual Região?:</label>
+                    <select id="regiaoCompra" onchange="calcular()">
+                        <option value="sudeste">Sudeste</option>
+                        <option value="sul">Sul</option>
+                        <option value="nordeste">Nordeste</option>
+                        <option value="norte">Norte</option>
+                        <option value="centro-oeste">Centro-Oeste</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cmv">CMV - Custo Mercadoria Vendida (R$):</label>
+                    <input type="number" id="cmv" value="800" step="0.01" onchange="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <label for="ipi">IPI (R$):</label>
+                    <input type="number" id="ipi" value="0" step="0.01" onchange="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <label for="frete">Frete (R$):</label>
+                    <input type="number" id="frete" value="0" step="0.01" onchange="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <label for="despesas">Despesas Operacionais (R$):</label>
+                    <input type="number" id="despesas" value="50" step="0.01" onchange="calcular()">
+                </div>
+            </div>
+
+            <div class="section results">
+                <h2>Resultados da Simulação</h2>
+                <div class="result-grid" id="resultados"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Alíquotas internas atualizadas por estado
+        const aliquotasInternas = {
+            'AC': 19.0,
+            'AL': 20.0,
+            'AP': 18.0,
+            'AM': 20.0,
+            'BA': 20.5,
+            'CE': 20.0,
+            'DF': 20.0,
+            'ES': 17.0,
+            'GO': 19.0,
+            'MA': 22.0,
+            'MT': 17.0,
+            'MS': 17.0,
+            'MG': 18.0,
+            'PA': 19.0,
+            'PB': 20.0,
+            'PR': 19.5,
+            'PE': 20.5,
+            'PI': 21.0,
+            'RJ': 20.0,
+            'RN': 20.0,
+            'RS': 17.0,
+            'RO': 19.5,
+            'RR': 20.0,
+            'SC': 17.0,
+            'SP': 18.0,
+            'SE': 19.0,
+            'TO': 20.0
+        };
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function calcularPercentual(valor, total) {
+            if (total === 0) return '(0.00%)';
+            const percentual = (valor / total) * 100;
+            return `(${percentual.toFixed(2)}%)`;
+        }
+
+        function calcular() {
+            const tipoVenda = document.getElementById('tipoVenda').value;
+            const destinatario = document.getElementById('destinatario').value;
+            const valorVenda = parseFloat(document.getElementById('valorVenda').value) || 0;
+            const aliquotaICMS = parseFloat(document.getElementById('aliquotaICMS').value) || 0;
+            const cmv = parseFloat(document.getElementById('cmv').value) || 0;
+            const ipi = parseFloat(document.getElementById('ipi').value) || 0;
+            const frete = parseFloat(document.getElementById('frete').value) || 0;
+            const despesas = parseFloat(document.getElementById('despesas').value) || 0;
+
+            // Mostrar/ocultar campos de estado baseado no destinatário
+            const estadoOrigemGroup = document.getElementById('estadoOrigemGroup');
+            const estadoDestinoGroup = document.getElementById('estadoDestinoGroup');
+
+            if (destinatario === 'PF') {
+                estadoOrigemGroup.style.display = 'block';
+                estadoDestinoGroup.style.display = 'block';
+            } else {
+                estadoOrigemGroup.style.display = 'none';
+                estadoDestinoGroup.style.display = 'none';
+            }
+
+            // Cálculos
+            const icmsVenda = valorVenda * (aliquotaICMS / 100);
+            const pisVenda = valorVenda * 0.0165;
+            const cofinsVenda = valorVenda * 0.076;
+
+            // Cálculo do DIFAL para PF
+            let difal = 0;
+            if (destinatario === 'PF') {
+                const estadoOrigem = document.getElementById('estadoOrigem').value;
+                const estadoDestino = document.getElementById('estadoDestino').value;
+
+                const aliquotaOrigem = aliquotasInternas[estadoOrigem] || 18;
+                const aliquotaDestino = aliquotasInternas[estadoDestino] || 18;
+
+                // DIFAL = (Alíquota Destino - Alíquota Origem) * Valor da Operação
+                difal = ((aliquotaDestino - aliquotaOrigem) / 100) * valorVenda;
+
+                // DIFAL não pode ser negativo
+                if (difal < 0) difal = 0;
+            }
+
+            const totalImpostos = icmsVenda + pisVenda + cofinsVenda + difal;
+            const receitaLiquida = valorVenda - totalImpostos;
+            const custoTotal = cmv + ipi + frete + despesas;
+            const lucro = receitaLiquida - custoTotal;
+
+            // Exibir resultados
+            const resultadosDiv = document.getElementById('resultados');
+            resultadosDiv.innerHTML = `
+                <div class="result-item">
+                    <div class="result-label">Valor de Venda</div>
+                    <div class="result-value">${formatarMoeda(valorVenda)} <span class="percentage">(100.00%)</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) ICMS s/ Venda</div>
+                    <div class="result-value negative">${formatarMoeda(icmsVenda)} <span class="percentage">${calcularPercentual(icmsVenda, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) PIS s/ Venda</div>
+                    <div class="result-value negative">${formatarMoeda(pisVenda)} <span class="percentage">${calcularPercentual(pisVenda, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) COFINS s/ Venda</div>
+                    <div class="result-value negative">${formatarMoeda(cofinsVenda)} <span class="percentage">${calcularPercentual(cofinsVenda, valorVenda)}</span></div>
+                </div>
+                ${destinatario === 'PF' && difal > 0 ? `
+                <div class="result-item">
+                    <div class="result-label">(-) DIFAL (Diferencial de Alíquota)</div>
+                    <div class="result-value negative">${formatarMoeda(difal)} <span class="percentage">${calcularPercentual(difal, valorVenda)}</span></div>
+                </div>
+                ` : ''}
+                <div class="result-item">
+                    <div class="result-label">Total de Impostos</div>
+                    <div class="result-value negative">${formatarMoeda(totalImpostos)} <span class="percentage">${calcularPercentual(totalImpostos, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Receita Líquida</div>
+                    <div class="result-value positive">${formatarMoeda(receitaLiquida)} <span class="percentage">${calcularPercentual(receitaLiquida, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) CMV</div>
+                    <div class="result-value negative">${formatarMoeda(cmv)} <span class="percentage">${calcularPercentual(cmv, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) IPI</div>
+                    <div class="result-value negative">${formatarMoeda(ipi)} <span class="percentage">${calcularPercentual(ipi, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) Frete</div>
+                    <div class="result-value negative">${formatarMoeda(frete)} <span class="percentage">${calcularPercentual(frete, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">(-) Despesas Operacionais</div>
+                    <div class="result-value negative">${formatarMoeda(despesas)} <span class="percentage">${calcularPercentual(despesas, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Custo Total</div>
+                    <div class="result-value negative">${formatarMoeda(custoTotal)} <span class="percentage">${calcularPercentual(custoTotal, valorVenda)}</span></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">💰 Lucro</div>
+                    <div class="result-value ${lucro >= 0 ? 'positive' : 'negative'}">${formatarMoeda(lucro)} <span class="percentage">${calcularPercentual(lucro, valorVenda)}</span></div>
+                </div>
+            `;
+        }
+
+        // Calcular ao carregar a página
+        calcular();
+    </script>
+</body>
+</html>
