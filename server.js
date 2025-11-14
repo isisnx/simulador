@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const SIEG_TOKEN = 'SEU_TOKEN_AQUI'; // Token que você forneceu
+const SIEG_TOKEN = 'eL9W6THKlsxCRvNJrgDa3mlt4ICSHw7dtTey5K_zvVE'; // Token que você forneceu
 const SIEG_BASE_URL = 'https://api.sieg.com/api/v1';
 
 // ============================================
